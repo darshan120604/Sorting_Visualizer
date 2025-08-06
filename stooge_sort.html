@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Stooge Sort Visualizer</title>
+  <style>
+    body { background: #111827; color: #f3f4f6; font-family: 'Segoe UI', Arial, sans-serif; margin: 0;}
+    #main { display: flex; flex-direction: row; justify-content: center; align-items: flex-start; gap: 38px; margin: 40px 0; flex-wrap: wrap;}
+    #visualizer, #codebox { background: #21273a; border-radius: 12px; padding: 26px 18px 18px 18px; box-shadow: 0 4px 24px #0003;}
+    #visualizer { width: 610px; min-width: 350px;}
+    #array { display: flex; align-items: flex-end; height: 180px; margin: 28px 0 8px 0; background: #181e2b; border-radius: 10px; transition: background 0.3s; position:relative;}
+    .bar { flex: 1; margin: 0 3px; background: linear-gradient(180deg,#22d3ee 0%, #1d4ed8 100%);
+      border-radius: 5px 5px 0 0; position: relative; min-width: 16px; box-shadow: 0 2px 8px #0ef2;
+      display: flex; align-items: flex-end; justify-content: center; transition: background 0.3s, height 0.35s cubic-bezier(.34,1.56,.64,1);}
+    .bar .value { position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%); font-size: 13px; color: #fff; font-weight: bold; z-index: 2; pointer-events: none; background: rgba(32,36,64,0.22); padding: 2px 6px; border-radius: 6px;}
+    .bar.active { background: linear-gradient(180deg,#fb923c 20%,#fbbf24 100%);}
+    .bar.comparing { background: linear-gradient(180deg,#9f35fa 10%,#f370b2 100%);}
+    .bar.sorted { background: linear-gradient(180deg,#9EDD7D 10%,#2fa94e 90%);}
+    .bar.recursive { background: linear-gradient(180deg,#818cf8 10%,#a5b4fc 100%);}
+    .range-box {
+      position: absolute; bottom:172px; left:0; width:100%; height:0; pointer-events:none; text-align:center;
+      font-size:15px; font-weight:600; color:#67e8f9; text-shadow: 0 2px 14px #03709433; user-select:none;
+    }
+    #explanation { margin-top: 18px; font-size: 18px; color: #a7ffeb; min-height: 36px; font-family: 'Fira Mono', monospace; text-shadow: 0 1px 8px #096c5e32; letter-spacing: .5px;}
+    #controls { margin-top: 8px; margin-bottom: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px;}
+    #controls label, #controls input[type=range] { font-size: 15.5px;}
+    #controls button, #controls input[type=range] { padding: 6.5px 13px; font-size: 16px; border-radius: 6px; border: none; background: #374151; color: #fff; cursor: pointer;}
+    #controls button:hover { background: #0ea5e9; color: #fff;}
+    #controls input[type=range] { accent-color: #3b82f6; background: #27273c; border-radius: 5px; width: 90px; height: 4px; margin-left:8px;}
+    #inputbox { margin-top: 16px; display: flex; align-items: center; gap: 10px; font-size: 15px;}
+    #inputbox input { width: 165px; padding: 7px 8px; border-radius: 5px; border: 1.2px solid #1251b0; background: #20243d; color: #c1d1fb;}
+    #inputbox input:focus { border-color: #22d3ee; background: #181d37;}
+    #inputbox button { padding: 7px 13px; border-radius: 5px; background: #1847a3; color: #eee;}
+    #inputbox button:hover { background: #2563eb; }
+    #codebox { min-width:320px; max-width: 500px;}
+    #codebox strong { font-size: 17.5px; color: #93e7fc;}
+    pre { margin: 0; padding-top: 5px; font-family: 'Fira Mono', 'Consolas', 'monospace'; font-size:16px; color: #e0e7ef; background: none; white-space: pre-wrap; word-break: break-word; overflow-x: auto;}
+    .codeline { display:block; padding: 0 8px; border-radius:6px;}
+    .highlight { background: #155ab5; color: #ffeebd;}
+    #purecodebox { background:#232c4d; margin: 42px auto 44px auto; border-radius:13px; max-width:1000px; padding:26px 23px 17px 23px;}
+    #purecodebox strong { font-size:20px; font-weight: 700; color: #93e7fc;}
+    .codes-list { display: flex; flex-wrap: wrap; gap: 30px; justify-content: flex-start;}
+    .codes-list pre { font-size: 13.7px; background:#191e2b; border-radius: 7px; padding:14px 12px 12px 12px; min-width: 190px; max-width: 100%; border: 1.2px solid #2d3b54; color: #b0e0fa;}
+    .codes-list .lang { font-size: 15.5px; margin-bottom: 4px; color: #93e7fc;}
+    .codes-row { display: flex; gap: 36px; margin-bottom: 16px;}
+    .codes-row > div { flex: 1 1 0; min-width: 180px;}
+    @media only screen and (max-width: 1000px) { #main { flex-direction: column; gap: 16px;} #visualizer { width: 97vw; min-width: 0; } #codebox { max-width: 100vw; } }
+    @media (max-width: 720px) { .codes-row { flex-direction: column; gap: 12px; } }
+    a { color: #93e7fc; text-decoration: none; font-size: 16px; padding-left: 14px;}
+
+  </style>
+</head>
+<body>
+<a href="index.html">← Back to main index</a>
+<div id="main">
+  <div id="visualizer">
+    <div id="controls">
+      <label>Array size: <input id="sizeSlider" type="range" min="2" max="20" value="8"></label>
+      <button onclick="resetArray()">Reset</button>
+      <button onclick="start()">▶ Play</button>
+      <button onclick="pause()">⏸ Pause</button>
+      <button onclick="stepToStart()">|⏮ Start</button>
+      <button onclick="prevStep()">⏮ Back</button>
+      <button onclick="nextStep()">⏭ Next</button>
+      <button onclick="stepToEnd()">End ⏭|</button>
+      <label>Speed: <input id="speedSlider" type="range" min="30" max="600" value="170"></label>
+    </div>
+    <div id="inputbox">
+      <label for="arrayInput">Custom array: </label>
+      <input type="text" id="arrayInput" placeholder="e.g. 23,14,88,11,77">
+      <button onclick="useCustomArray()">Use Custom Array</button>
+    </div>
+    <div id="array"></div>
+    <div class="range-box" id="rangeBox"></div>
+    <div id="explanation"></div>
+  </div>
+  <div id="codebox">
+    <strong>Stooge Sort <span style="font-size:13px; color:#999; font-weight:normal">(JS visualized with highlighting)</span></strong>
+    <pre id="codearea"></pre>
+  </div>
+</div>
+<div id="purecodebox">
+  <strong>Pure Stooge Sort in Java / C++ / Python / JavaScript</strong>
+  <div class="codes-list">
+    <div class="codes-row">
+      <div><div class="lang">Java</div>
+<pre>static void stoogeSort(int[] arr, int l, int h) {
+  if(arr[l] > arr[h]) { int t=arr[l]; arr[l]=arr[h]; arr[h]=t; }
+  if(h-l+1 > 2) {
+    int t = (h-l+1)/3;
+    stoogeSort(arr, l, h-t);
+    stoogeSort(arr, l+t, h);
+    stoogeSort(arr, l, h-t);
+  }
+}</pre>
+      </div><div><div class="lang">C++</div>
+<pre>void stoogeSort(int arr[], int l, int h) {
+  if(arr[l] > arr[h]) swap(arr[l],arr[h]);
+  if(h-l+1 > 2) {
+    int t=(h-l+1)/3;
+    stoogeSort(arr,l,h-t);
+    stoogeSort(arr,l+t,h);
+    stoogeSort(arr,l,h-t);
+  }
+}</pre>
+      </div>
+    </div>
+    <div class="codes-row">
+      <div><div class="lang">Python</div>
+<pre>def stooge_sort(arr, l, h):
+    if arr[l]>arr[h]: arr[l],arr[h] = arr[h],arr[l]
+    if h-l+1 > 2:
+        t = (h-l+1)//3
+        stooge_sort(arr, l, h-t)
+        stooge_sort(arr, l+t, h)
+        stooge_sort(arr, l, h-t)
+</pre>
+      </div><div><div class="lang">JavaScript</div>
+<pre>function stoogeSort(arr, l, h) {
+  if(arr[l] > arr[h]) [arr[l],arr[h]] = [arr[h],arr[l]];
+  if(h-l+1 > 2) {
+    let t = Math.floor((h-l+1)/3);
+    stoogeSort(arr, l, h-t);
+    stoogeSort(arr, l+t, h);
+    stoogeSort(arr, l, h-t);
+  }
+}
+</pre>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="info-section" style="background:#1f2937;color:#e3f7fa;border-radius:12px;max-width:900px;margin:28px auto 18px auto;padding:24px 22px;box-shadow:0 4px 18px #1e293b30;">
+  <h2 style="margin-top:0;color:#93e7fc;">Stooge Sort: Complexity & Key Points</h2>
+  <ul style="margin:0 0 12px 24px; font-size:16px;">
+    <li><strong>Time complexity:</strong> <code>O(n^{2.7095...})</code> (worse than bubble/insertion)</li>
+    <li><strong>Space:</strong> <code>O(1)</code> (in-place, not counting recursion stack)</li>
+    <li>Primarily educational; not practical (inefficient for even small arrays)</li>
+    <li>Recursively sorts initial and final 2/3 segments; many overlapping calls</li>
+    <li>Helps illustrate recursion and swap logic in sorting</li>
+  </ul>
+</div>
+<script>
+const ARRAY_MIN=2,ARRAY_MAX=20,NUM_MIN=0,NUM_MAX=999;
+const codeLines = [
+  'function stoogeSort(arr, l, h) {',
+  '  if(arr[l] > arr[h]) [arr[l],arr[h]] = [arr[h],arr[l]];',
+  '  if(h-l+1 > 2) {',
+  '    let t=Math.floor((h-l+1)/3);',
+  '    stoogeSort(arr, l, h-t);',
+  '    stoogeSort(arr, l+t, h);',
+  '    stoogeSort(arr, l, h-t);',
+  '  }',
+  '}'
+];
+let array = [], states = [], stateIdx = 0, animating = false, paused = false, timeoutID = null;
+const arrayContainer = document.getElementById('array');
+const rangeBox = document.getElementById('rangeBox');
+const explanationBox = document.getElementById('explanation');
+const sizeSlider = document.getElementById('sizeSlider');
+const speedSlider = document.getElementById('speedSlider');
+const codearea = document.getElementById('codearea');
+function randomArray(size = 8) {
+  return Array.from({length: size}, () => Math.floor(Math.random()*(NUM_MAX-NUM_MIN+1))+NUM_MIN);
+}
+function renderArray({active=[], comparing=[], recursive=[] , sorted=[] , range=[-1,-1]} = {}) {
+  arrayContainer.innerHTML = '';
+  array.forEach((val, idx) => {
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    if (recursive && idx >= range[0] && idx <= range[1]) bar.classList.add('recursive');
+    if (active && active.includes(idx)) bar.classList.add('active');
+    if (comparing && comparing.includes(idx)) bar.classList.add('comparing');
+    if (sorted && sorted.includes(idx)) bar.classList.add('sorted');
+    bar.style.height = (55 + (val/NUM_MAX)*120) + 'px';
+    bar.innerHTML = `<div class="value">${val}</div>`;
+    arrayContainer.appendChild(bar);
+  });
+  // Recursive range display
+  if(range[0]>=0&&range[1]>=0){
+    rangeBox.style.display = '';
+    // rangeBox.textContent = `Sorting range [${range[0]}, ${range[1]}] (size: ${range[1]-range[0]+1})`;
+  }else rangeBox.style.display='none';
+}
+// Step-by-step snapshot
+function snapshot(arr, info, desc) {
+  states.push({ arr: arr.slice(), ...info, desc });
+}
+
+async function captureStoogeSortSteps() {
+  states = [];
+  let arr = array.slice(), n=arr.length, sortedIndices=[];
+  function* stoogeSortGen(a, l, h, depth) {
+    if(l>h) return;
+    yield {arr:a, range:[l,h], active:[l,h], desc:`Call: sort [${l}, ${h}]`};
+    if(a[l]>a[h]){
+      [a[l],a[h]]=[a[h],a[l]];
+      yield {arr:a, range:[l,h], comparing:[l,h], desc:`Swap arr[${l}] and arr[${h}] since arr[${l}]>${arr[h]}`};
+    }
+    if(h-l+1>2){
+      let t = Math.floor((h-l+1)/3);
+      // First 2/3
+      yield {arr:a, range:[l,h-t], recursive:true, desc:`Recursively sort first 2/3 : [${l},${h-t}]`};
+      yield* stoogeSortGen(a, l, h-t, depth+1);
+      // Last 2/3
+      yield {arr:a, range:[l+t,h], recursive:true, desc:`Recursively sort last 2/3 : [${l+t},${h}]`};
+      yield* stoogeSortGen(a, l+t, h, depth+1);
+      // Again first 2/3
+      yield {arr:a, range:[l,h-t], recursive:true, desc:`Recursively sort first 2/3 again: [${l},${h-t}]`};
+      yield* stoogeSortGen(a, l, h-t, depth+1);
+    }
+  }
+  // Compose all steps from generator
+  for(let step of stoogeSortGen(arr,0,arr.length-1,0)) {
+    snapshot(step.arr.slice(), {
+      active: step.active||[],
+      comparing: step.comparing||[],
+      recursive: step.recursive ? true : undefined,
+      sorted: [],
+      range: step.range||[-1,-1]
+    }, step.desc);
+    await new Promise(r=>setTimeout(r,0));
+  }
+  snapshot(arr, {sorted: Array.from({length:arr.length},(_,i)=>i), range: [0,arr.length-1]}, "Stooge Sort complete! Array sorted.");
+}
+
+function resetArray() {
+  if (animating) return;
+  array = randomArray(Number(sizeSlider.value));
+  renderArray({range:[0,array.length-1]});
+  displayCode(-1);
+  states = []; stateIdx = 0;
+  explanationBox.textContent = '';
+}
+function useCustomArray() {
+  const val = document.getElementById('arrayInput').value.trim();
+  const customArr = val.split(',').map(s => +s.trim()).filter(x => !isNaN(x) && x >= NUM_MIN && x <= NUM_MAX);
+  if (customArr.length < ARRAY_MIN || customArr.length > ARRAY_MAX) {
+    alert(`Please enter ${ARRAY_MIN} to ${ARRAY_MAX} integers in [${NUM_MIN},${NUM_MAX}], comma separated`);
+    return;
+  }
+  array = customArr;
+  renderArray({range:[0,customArr.length-1]});
+  displayCode(-1); states = []; stateIdx = 0; explanationBox.textContent = '';
+}
+async function start() {
+  if (animating) return;
+  animating = true; paused = false; states = []; stateIdx = 0;
+  await captureStoogeSortSteps();
+  stateIdx = 0;
+  nextStep();
+}
+function pause() { paused = true; animating = false; if(timeoutID) clearTimeout(timeoutID);}
+function nextStep() {
+  if (stateIdx >= states.length) { animating = false; displayCode(-1); explanationBox.textContent = ''; rangeBox.textContent=''; return;}
+  const s = states[stateIdx];
+  array = s.arr.slice();
+  renderArray({
+    active: s.active||[],
+    comparing: s.comparing||[],
+    recursive: s.recursive ? s.range : [],
+    sorted: s.sorted||[],
+    range: s.range||[-1,-1]
+  });
+  explanationBox.textContent = s.desc || "";
+  displayCode(-1);
+  stateIdx++;
+  if (animating && !paused) timeoutID = setTimeout(nextStep, 640 - Number(speedSlider.value));
+}
+function prevStep() { if (stateIdx > 1) stateIdx-=2; if (states.length) nextStep();}
+function stepToStart() { stateIdx = 0; nextStep();}
+function stepToEnd() { stateIdx = states.length-1; nextStep();}
+function displayCode(hl) {
+  codearea.innerHTML = '';
+  codeLines.forEach((l,i) => {
+    const el = document.createElement('span');
+    el.className = 'codeline' + (i===hl ? ' highlight':'');
+    el.textContent = l;
+    codearea.appendChild(el);
+    codearea.appendChild(document.createTextNode('\n'));
+  });
+}
+sizeSlider.addEventListener('input', resetArray);
+resetArray();
+displayCode(-1);
+</script>
+</body>
+</html>

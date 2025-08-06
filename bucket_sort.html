@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bucket Sort Visualizer</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { background: #111827; color: #f3f4f6; font-family: 'Segoe UI', Arial, sans-serif; margin: 0;}
+    #main { display: flex; flex-direction: row; justify-content: center; align-items: flex-start; gap: 38px; margin: 40px 0; flex-wrap: wrap;}
+    #visualizer, #codebox { background: #21273a; border-radius: 12px; padding: 26px 18px 18px 18px; box-shadow: 0 4px 24px #0003;}
+    #visualizer { width: 610px; min-width: 350px; }
+    #array { display: flex; align-items: flex-end; height: 180px; margin: 28px 0 8px 0; background: #181e2b; border-radius: 10px; transition: background 0.3s;}
+    #buckets-zone { margin-top: 8px;}
+    .bucket-row { display: flex; flex-direction: row; align-items: flex-end; margin-bottom: 9px; }
+    .bucket-label { min-width: 32px; text-align: right; color: #93e7fc; font-size: 13px; margin-right: 7px; }
+    .bucket-bars { display: flex; align-items: flex-end; min-height: 26px; }
+    .bucket-bar {
+      margin: 0 2px;
+      min-width: 22px;
+      max-width: 30px;
+      height: 27px;
+      background: linear-gradient(180deg,#0ea5e9 20%, #0e7490 95%);
+      border-radius: 5px;
+      color: #fff;
+      font-weight: 600;
+      font-size: 13px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1.2px solid #155e75;
+      box-shadow: 0 1px 3px #0833443d;
+      position: relative;
+      transition: background 0.25s;
+    }
+    .bucket-bar.active {background: linear-gradient(180deg,#fde68a 0%,#fbbf24 100%); color: #3b2f14;}
+    .bucket-bar.sorted {background: linear-gradient(180deg,#22c55e 20%,#86efac 95%);}
+    .bucket-bar.moving {background: linear-gradient(180deg,#f43f5e 0%, #22d3ee 100%); color: #fff;}
+    .bar {
+      flex: 1; margin: 0 3px;
+      background: linear-gradient(180deg,#22d3ee 0%, #1d4ed8 100%);
+      border-radius: 5px 5px 0 0; position: relative;
+      min-width: 16px; transition: background 0.3s, height 0.35s cubic-bezier(.34,1.56,.64,1), box-shadow 0.30s;
+      box-shadow: 0 2px 8px #0ef2; display: flex;
+      align-items: flex-end; justify-content: center;
+    }
+    .bar .value {
+      position: absolute; bottom: 7px;
+      left: 50%; transform: translateX(-50%);
+      font-size: 13px; color: #fff;
+      text-shadow: 0 1px 6px #000, 0 0 4px #2e2a5c;
+      font-weight: bold; z-index: 2; pointer-events: none;
+      letter-spacing: .5px; background: rgba(32,36,64,0.22);
+      padding: 2px 6px; border-radius: 6px;
+    }
+    #explanation { margin-top: 18px; font-size: 18px; color: #a7ffeb; min-height: 28px; font-family: 'Fira Mono', monospace; text-shadow: 0 1px 8px #096c5e32; letter-spacing: .5px; transition: color 0.2s;}
+    /* Improved controls for more clarity and usability */
+    #controls { margin-top: 8px; margin-bottom: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px;}
+    #controls label, #controls input[type=range] { margin-bottom: 0; font-size: 15.5px;}
+    #controls button, #controls input[type=range] { padding: 6.5px 13px; font-size: 16px; border-radius: 6px; border: none; background: #374151; color: #fff; cursor: pointer; transition: background 0.17s, color 0.17s, box-shadow 0.18s; box-shadow: 0 2px 4px #0002;}
+    #controls button:hover { background: #0ea5e9; color: #fff; box-shadow: 0 4px 15px #49e9fa57;}
+    #controls input[type=range] { accent-color: #3b82f6; background: #27273c; border-radius: 5px; margin-left: 8px; width: 90px; height: 4px;}
+    #inputbox { margin-top: 16px; display: flex; align-items: center; gap: 10px; font-size: 15px; }
+    #inputbox input { width: 156px; padding: 7px 8px; border-radius: 5px; border: 1.2px solid #1251b0; font-size: 15px; margin-right: 5px; background: #20243d; color: #c1d1fb; outline: none; transition: border 0.16s;}
+    #inputbox input:focus { border-color: #22d3ee; background: #181d37;}
+    #inputbox button { padding: 7px 13px; font-size: 15px; border-radius: 5px; background: #1847a3; color: #eee; border: none; cursor: pointer; transition: background 0.17s;}
+    #inputbox button:hover { background: #2563eb; }
+    #codebox { min-width:320px; max-width: 500px;}
+    #codebox strong { font-size: 17.5px; color: #93e7fc; letter-spacing: 0.5px;}
+    pre { margin: 0; padding-top: 5px; font-family: 'Fira Mono', 'Consolas', 'monospace'; font-size:16px; line-height: 1.65; color: #e0e7ef; background: none; white-space: pre-wrap; word-break: break-word; overflow-x: auto; max-width: 100%;}
+    .codeline { display:block; padding: 0 8px; border-radius:6px; transition: background 0.19s; white-space: pre-wrap !important;}
+    .highlight { background: #155ab5; color: #ffeebd;}
+    a { color: #93e7fc; text-decoration: none; font-size: 16px; padding-left: 14px;}
+    #purecodebox { background:#232c4d; margin: 42px auto 44px auto; border-radius:13px; max-width:1000px; padding:26px 23px 17px 23px; box-shadow: 0 8px 32px #0ecdee20; border: 1.8px solid #0f466b28; }
+    #purecodebox strong { font-size:20px; font-weight: 700; color: #93e7fc; display: block; margin-bottom: 12px; letter-spacing: .3px;}
+    .codes-list { display: flex; flex-wrap: wrap; gap: 30px; justify-content: flex-start;}
+    .codes-list pre { font-size: 13.7px; background:#191e2b; border-radius: 7px; padding:14px 12px 12px 12px; margin:7px 0 0 0; min-width: 190px; max-width: 100%; border: 1.2px solid #2d3b54; color: #b0e0fa; overflow-x: auto;}
+    .codes-list .lang { font-size: 15.5px; margin-bottom: 4px; color: #93e7fc; letter-spacing: 0.2px; }
+    .codes-row { display: flex; gap: 36px; margin-bottom: 16px;}
+    .codes-row > div { flex: 1 1 0; min-width: 180px; max-width: 100%;}
+    @media only screen and (max-width: 1000px) { #main { flex-direction: column; gap: 16px;} #visualizer { width: 95vw; min-width: 0; } #codebox { max-width: 100vw; } }
+    @media (max-width: 720px) { .codes-row { flex-direction: column; gap: 12px; } }
+  </style>
+</head>
+<body>
+<a href="index.html">← Back to main index</a>
+<div id="main">
+  <div id="visualizer">
+    <div id="controls">
+      <label>Array size: <input id="sizeSlider" type="range" min="7" max="30" value="14"></label>
+      <button onclick="resetArray()">Reset</button>
+      <button onclick="start()">▶ Play</button>
+      <button onclick="pause()">⏸ Pause</button>
+      <button onclick="stepToStart()">|⏮ Start</button>
+      <button onclick="prevStep()">⏮ Back</button>
+      <button onclick="nextStep()">⏭ Next</button>
+      <button onclick="stepToEnd()">End ⏭|</button>
+      <label>Speed: <input id="speedSlider" type="range" min="30" max="600" value="150"></label>
+    </div>
+    <div id="inputbox">
+      <label for="arrayInput">Custom array: </label>
+      <input type="text" id="arrayInput" placeholder="e.g. 89,123,7,990">
+      <button onclick="useCustomArray()">Use Custom Array</button>
+    </div>
+    <div id="array"></div>
+    <div id="buckets-zone"></div>
+    <div id="explanation"></div>
+  </div>
+  <div id="codebox">
+    <strong>Bucket Sort <span style="font-size:13px; color:#999; font-weight:normal">(JS visualized with highlighting)</span></strong>
+    <pre id="codearea"></pre>
+  </div>
+</div>
+<div id="purecodebox">
+    <strong>Pure Bucket Sort in Java / C++ / Python / JavaScript</strong>
+    <div class="codes-list">
+      <div class="codes-row">
+        <div>
+          <div class="lang">Java</div>
+          <pre>
+  public static void bucketSort(int[] arr) {
+    int n = arr.length;
+    List&lt;Integer&gt;[] buckets = new ArrayList[10];
+    for(int i = 0; i &lt; 10; i++)
+      buckets[i] = new ArrayList&lt;&gt;();
+    for(int num : arr)
+      buckets[num / 100].add(num);
+    for(List&lt;Integer&gt; b : buckets)
+      Collections.sort(b);
+    int idx = 0;
+    for(List&lt;Integer&gt; b : buckets)
+      for(int v : b)
+        arr[idx++] = v;
+  }
+          </pre>
+        </div>
+        <div>
+          <div class="lang">C++</div>
+          <pre>
+  void bucketSort(int arr[], int n) {
+    vector&lt;int&gt; buckets[10];
+    for(int i = 0; i &lt; n; i++)
+      buckets[arr[i]/100].push_back(arr[i]);
+    for(int i = 0; i &lt; 10; i++)
+      sort(buckets[i].begin(), buckets[i].end());
+    int idx = 0;
+    for(int i = 0; i &lt; 10; i++)
+      for(int v : buckets[i])
+        arr[idx++] = v;
+  }
+          </pre>
+        </div>
+      </div>
+      <div class="codes-row">
+        <div>
+          <div class="lang">Python</div>
+          <pre>
+  def bucket_sort(arr):
+    buckets = [[] for _ in range(10)]
+    for num in arr:
+      buckets[num // 100].append(num)
+    for bucket in buckets:
+      bucket.sort()
+    idx = 0
+    for bucket in buckets:
+      for num in bucket:
+        arr[idx] = num
+        idx += 1
+          </pre>
+        </div>
+        <div>
+          <div class="lang">JavaScript</div>
+          <pre>
+  function bucketSort(arr) {
+    const buckets = Array.from({length: 10}, () => []);
+    arr.forEach(num => buckets[Math.floor(num / 100)].push(num));
+    buckets.forEach(bucket => bucket.sort((a, b) => a - b));
+    let i = 0;
+    for (const bucket of buckets)
+      for (const num of bucket)
+        arr[i++] = num;
+  }
+          </pre>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+<div id="info-section" style="background:#1f2937; color:#e3f7fa; border-radius:12px; max-width:900px; margin:28px auto 18px auto; padding:24px 22px; box-shadow:0 4px 18px #1e293b30;">
+  <h2 style="margin-top:0;color:#93e7fc;">Bucket Sort: Complexity & Key Points</h2>
+  <ul style="margin:0 0 12px 24px; font-size:16px;">
+    <li><strong>Worst-case time complexity:</strong> <code>O(n²)</code> (if all elements go into one bucket)</li>
+    <li><strong>Best-case/Average-case time complexity:</strong> <code>O(n + k)</code> (if elements are uniformly distributed among k buckets)</li>
+    <li><strong>Space complexity:</strong> <code>O(n + k)</code> (buckets plus the input array)</li>
+    <li>Great for sorting uniformly distributed data over a known range</li>
+    <li>Divides data into buckets, sorts each (typically with insertion sort inside buckets)</li>
+    <li>Not in-place, uses extra storage for buckets</li>
+    <li>Visualization helps to see data distribution and bucket sorting</li>
+  </ul>
+</div>
+<script>
+const NUM_BUCKETS = 10;
+const codeLines = [
+  "function bucketSort(arr) {",
+  "  const buckets = Array.from({length: 10}, () => []);",
+  "  arr.forEach(num => buckets[Math.floor(num/100)].push(num));",
+  "  buckets.forEach(bucket => bucket.sort((a, b) => a - b));",
+  "  let i = 0;",
+  "  for (const bucket of buckets)",
+  "    for (const num of bucket) arr[i++] = num;",
+  "}"
+];
+let array = [], states = [], stateIdx = 0, animating = false, paused = false, timeoutID = null;
+const arrayContainer = document.getElementById('array');
+const bucketsZone = document.getElementById('buckets-zone');
+const sizeSlider = document.getElementById('sizeSlider');
+const speedSlider = document.getElementById('speedSlider');
+const codearea = document.getElementById('codearea');
+const explanationBox = document.getElementById('explanation');
+function randomArray(size) {
+  return Array.from({length: size}, () => Math.floor(Math.random()*1000));
+}
+function renderArray(arr = array) {
+  arrayContainer.innerHTML = '';
+  arr.forEach((val, idx) => {
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    bar.style.height = (55 + (val/1000)*120) + 'px';
+    bar.innerHTML = `<div class="value">${val}</div>`;
+    arrayContainer.appendChild(bar);
+  });
+}
+function renderBuckets(buckets, activeBucket = -1, insideBucketIdx = -1) {
+  bucketsZone.innerHTML = '';
+  for(let b=0;b<NUM_BUCKETS;b++){
+    const bucketRow = document.createElement('div');
+    bucketRow.className = 'bucket-row';
+    const label = document.createElement('div');
+    label.className = 'bucket-label';
+    label.textContent = `B${b}:`;
+    bucketRow.appendChild(label);
+    const bucketBars = document.createElement('div');
+    bucketBars.className = 'bucket-bars';
+    buckets[b].forEach((num, idx) => {
+      const bar = document.createElement('div');
+      bar.className = 'bucket-bar';
+      if(b===activeBucket && idx===insideBucketIdx) bar.classList.add('active');
+      bar.innerHTML = num;
+      bucketBars.appendChild(bar);
+    });
+    bucketRow.appendChild(bucketBars);
+    bucketsZone.appendChild(bucketRow);
+  }
+}
+function snapshot(arr, buckets, activeBucket, insideBucketIdx, mergedArrayIdx, desc) {
+  states.push({
+    arr: arr.slice(),
+    buckets: buckets.map(b=>b.slice()),
+    activeBucket,
+    insideBucketIdx,
+    mergedArrayIdx,
+    desc
+  });
+}
+async function captureBucketSortSteps() {
+  states = [];
+  let arr = array.slice();
+  let buckets = Array.from({length:NUM_BUCKETS},()=>[]);
+  // Place elements into buckets
+  for(let i=0; i<arr.length; i++){
+    const num = arr[i], idx = Math.floor(num/100);
+    buckets[idx].push(num);
+    snapshot(arr, buckets, idx, buckets[idx].length-1, -1, `Place ${num} in bucket B${idx}`);
+    await new Promise(r=>setTimeout(r,0));
+  }
+  // Sort buckets (insertion sort for education)
+  for(let b=0;b<NUM_BUCKETS;b++){
+    let bucket = buckets[b];
+    for(let i=1;i<bucket.length;i++){
+      let key = bucket[i], j = i-1;
+      snapshot(arr, buckets, b, i, -1, `Insert ${key} in bucket B${b}`);
+      await new Promise(r=>setTimeout(r,0));
+      while(j>=0 && bucket[j]>key){
+        bucket[j+1]=bucket[j];
+        j--;
+        snapshot(arr, buckets, b, j+1, -1, `Shift ${bucket[j+1]} right in bucket B${b}`);
+        await new Promise(r=>setTimeout(r,0));
+      }
+      bucket[j+1]=key;
+      snapshot(arr, buckets, b, j+1, -1, `Placed ${key} in position ${j+1} of bucket B${b}`);
+      await new Promise(r=>setTimeout(r,0));
+    }
+  }
+  // Merge buckets and move to main arr
+  let idx=0;
+  for(let b=0;b<NUM_BUCKETS;b++){
+    let bucket = buckets[b];
+    for(let i=0;i<bucket.length;i++){
+      arr[idx]=bucket[i];
+      snapshot(arr, buckets, b, i, idx, `Move ${bucket[i]} from B${b} to main array at ${idx}`);
+      await new Promise(r=>setTimeout(r,0));
+      idx++;
+    }
+  }
+  snapshot(arr, buckets, -1, -1, -1, `All buckets merged, array sorted!`);
+}
+function resetArray() {
+  if (animating) return;
+  array = randomArray(Number(sizeSlider.value));
+  renderArray();
+  renderBuckets(Array.from({length:NUM_BUCKETS},()=>[]));
+  displayCode(-1);
+  states = []; stateIdx = 0;
+  explanationBox.textContent = '';
+}
+function useCustomArray() {
+  const val = document.getElementById('arrayInput').value;
+  const customArr = val.split(',').map(s => +s.trim()).filter(x => !isNaN(x) && x >= 0 && x < 1000);
+  if (customArr.length < 2) {
+    alert('Please enter at least 2 integers between 0 and 999, comma separated.');
+    return;
+  }
+  array = customArr;
+  renderArray();
+  renderBuckets(Array.from({length:NUM_BUCKETS},()=>[]));
+  displayCode(-1);
+  states = []; stateIdx = 0;
+  explanationBox.textContent = '';
+}
+async function start() {
+  if (animating) return;
+  animating = true; paused = false; states = []; stateIdx = 0;
+  await captureBucketSortSteps();
+  stateIdx = 0;
+  nextStep();
+}
+function pause() { paused = true; animating = false; if(timeoutID) clearTimeout(timeoutID);}
+function nextStep() {
+  if (stateIdx >= states.length) { animating = false; displayCode(-1); explanationBox.textContent = ''; return;}
+  const s = states[stateIdx];
+  array = s.arr.slice();
+  renderArray(array);
+  renderBuckets(s.buckets, s.activeBucket, s.insideBucketIdx, s.mergedArrayIdx);
+  explanationBox.textContent = s.desc || "";
+  displayCode(-1);
+  stateIdx++;
+  if (animating && !paused) {
+    timeoutID = setTimeout(nextStep, 640 - Number(speedSlider.value));
+  }
+}
+function prevStep() { if (stateIdx > 1) stateIdx-=2; if (states.length) nextStep();}
+function stepToStart() { stateIdx = 0; nextStep();}
+function stepToEnd() { stateIdx = states.length-1; nextStep();}
+function displayCode(hl) {
+  codearea.innerHTML = '';
+  codeLines.forEach((l,i) => {
+    const el = document.createElement('span');
+    el.className = 'codeline' + (i===hl ? ' highlight':'');
+    el.textContent = l;
+    codearea.appendChild(el);
+    codearea.appendChild(document.createTextNode('\n'));
+  });
+}
+sizeSlider.addEventListener('input', resetArray);
+resetArray();
+displayCode(-1);
+</script>
+</body>
+</html>
