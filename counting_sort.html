@@ -105,33 +105,44 @@
     <div class="codes-row">
       <div>
         <div class="lang">Java</div>
-<pre>public static void countingSort(int[] arr) {
+        <pre>
+public static void countingSort(int[] arr) {
   int max = Arrays.stream(arr).max().getAsInt();
-  int[] count = new int[max+1];
+  int[] count = new int[max + 1];
   for (int a : arr) count[a]++;
   int i = 0;
-  for (int a = 0; a <= max; a++)
-    while (count[a]-- > 0) arr[i++] = a;
-}</pre>
+  for (int a = 0; a <= max; a++) {
+    while (count[a]-- > 0) {
+      arr[i++] = a;
+    }
+  }
+}
+        </pre>
       </div>
       <div>
         <div class="lang">C++</div>
-<pre>void countingSort(int arr[], int n) {
-  int mx = *max_element(arr, arr+n);
-  vector<int> cnt(mx+1, 0);
-  for(int i=0;i<n;i++) cnt[arr[i]]++;
-  int idx=0;
-  for(int i=0; i<=mx; i++)
-    while(cnt[i]--) arr[idx++] = i;
-}</pre>
+        <pre>
+void countingSort(int arr[], int n) {
+  int mx = *max_element(arr, arr + n);
+  std::vector<int> cnt(mx + 1, 0);
+  for (int i = 0; i < n; i++) cnt[arr[i]]++;
+  int idx = 0;
+  for (int i = 0; i <= mx; i++) {
+    while (cnt[i]--) {
+      arr[idx++] = i;
+    }
+  }
+}
+        </pre>
       </div>
     </div>
     <div class="codes-row">
       <div>
         <div class="lang">Python</div>
-<pre>def counting_sort(arr):
+        <pre>
+def counting_sort(arr):
     mx = max(arr)
-    count = [0]*(mx+1)
+    count = [0] * (mx + 1)
     for x in arr:
         count[x] += 1
     idx = 0
@@ -139,23 +150,28 @@
         for _ in range(c):
             arr[idx] = val
             idx += 1
-</pre>
+        </pre>
       </div>
       <div>
         <div class="lang">JavaScript</div>
-<pre>function countingSort(arr) {
+        <pre>
+function countingSort(arr) {
   let max = Math.max(...arr);
-  let count = Array(max+1).fill(0);
-  arr.forEach(x=>count[x]++);
-  let i=0;
-  for(let x=0;x<=max;x++)
-    while(count[x]--) arr[i++]=x;
+  let count = Array(max + 1).fill(0);
+  arr.forEach(x => count[x]++);
+  let i = 0;
+  for (let x = 0; x <= max; x++) {
+    while (count[x]--) {
+      arr[i++] = x;
+    }
+  }
 }
-</pre>
+        </pre>
       </div>
     </div>
   </div>
 </div>
+
 <div id="info-section" style="background:#1f2937; color:#e3f7fa; border-radius:12px; max-width:900px; margin:28px auto 18px auto; padding:24px 22px; box-shadow:0 4px 18px #1e293b30;">
   <h2 style="margin-top:0;color:#93e7fc;">Counting Sort: Complexity & Key Points</h2>
   <ul style="margin:0 0 12px 24px; font-size:16px;">
@@ -311,3 +327,4 @@ displayCode(-1);
 </script>
 </body>
 </html>
+
