@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TimSort Visualizer with Pointers</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { background: #111827; color: #f3f4f6; font-family: 'Segoe UI', Arial, sans-serif; margin: 0;}
+    #main { display: flex; flex-direction: row; justify-content: center; align-items: flex-start; gap: 38px; margin: 40px 0; flex-wrap: wrap;}
+    #visualizer, #codebox { background: #21273a; border-radius: 12px; padding: 26px 18px 18px 18px; box-shadow: 0 4px 24px #0003;}
+    #visualizer { width: 710px; min-width: 350px; }
+    #array { display: flex; align-items: flex-end; height: 180px; margin: 28px 0 8px 0; background: #181e2b; border-radius: 10px; transition: background 0.3s; position:relative;}
+    .bar { flex: 1; margin: 0 3px; background: linear-gradient(180deg,#22d3ee 0%, #1d4ed8 100%); border-radius: 5px 5px 0 0; position: relative; min-width: 16px; transition:0.3s;}
+    .bar .value { position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%); font-size: 13px; color: #fff; font-weight: bold; z-index: 2; pointer-events: none; background: rgba(32,36,64,0.22); padding: 2px 6px; border-radius: 6px;}
+    .bar.smallrun { background: linear-gradient(180deg,#22d3ee 0%, #1d4ed8 90%);}
+    .bar.mergeL { background: linear-gradient(180deg,#818cf8 10%,#a5b4fc 100%);}
+    .bar.mergeR { background: linear-gradient(180deg,#62e3fa 10%,#f4fafc 100%);}
+    .bar.merging { background: linear-gradient(180deg,#10b981 0%,#6ee7b7 100%);}
+    .bar.sorted { background: linear-gradient(180deg,#9EDD7D 10%,#2fa94e 90%);}
+    .bar.current { background: linear-gradient(180deg,#fbbf24 0%,#fabf3c 60%);}
+    .bar.compare { background: linear-gradient(180deg,#f43f5e 0%,#a21caf 94%);}
+    .bar.lptr { background: linear-gradient(180deg,#818cf8 60%,#fbbf24 99%);}
+    .bar.rptr { background: linear-gradient(180deg,#06d6a0 80%,#f43f5e 100%);}
+    .ptr-labelbar {
+      position: absolute; top: -28px; left: 0; width: 100%; height:0; text-align:center; pointer-events:none;
+      font-size: 13px; font-weight: bold; letter-spacing:.5px; user-select:none; z-index:99;
+    }
+    #explanation { margin-top: 18px; font-size: 18px; color: #a7ffeb; min-height: 40px; font-family: 'Fira Mono', monospace; text-shadow: 0 1px 8px #096c5e32; letter-spacing: .5px;}
+    #controls { margin-top: 8px; margin-bottom: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px;}
+    #controls label, #controls input[type=range] { margin-bottom: 0; font-size: 15.5px;}
+    #controls button, #controls input[type=range] { padding: 6.5px 13px; font-size: 16px; border-radius: 6px; border: none; background: #374151; color: #fff; cursor: pointer;}
+    #controls button:hover { background: #0ea5e9; color: #fff;}
+    #controls input[type=range] { accent-color: #3b82f6; background: #27273c; border-radius: 5px; margin-left: 8px; width: 90px; height: 4px;}
+    #inputbox { margin-top: 16px; display: flex; align-items: center; gap: 10px; font-size: 15px;}
+    #inputbox input { width: 176px; padding: 7px 8px; border-radius: 5px; border: 1.2px solid #1251b0; font-size: 15px; margin-right: 5px; background: #20243d; color: #c1d1fb;}
+    #inputbox input:focus { border-color: #22d3ee; background: #181d37;}
+    #inputbox button { padding: 7px 13px; border-radius: 5px; background: #1847a3; color: #eee;}
+    #inputbox button:hover { background: #2563eb; }
+    #codebox { min-width:320px; max-width: 500px;}
+    #codebox strong { font-size: 17.5px; color: #93e7fc; letter-spacing: 0.5px;}
+    pre { margin: 0; padding-top: 5px; font-family: 'Fira Mono', 'Consolas', 'monospace'; font-size:16px; line-height: 1.65; color: #e0e7ef; background: none; white-space: pre-wrap; word-break: break-word; overflow-x: auto; max-width: 100%;}
+    .codeline { display:block; padding: 0 8px; border-radius:6px;}
+    .highlight { background: #155ab5; color: #ffeebd;}
+    #purecodebox { background:#232c4d; margin: 42px auto 44px auto; border-radius:13px; max-width:1000px; padding:26px 23px 17px 23px;}
+    #purecodebox strong { font-size:20px; font-weight: 700; color: #93e7fc;}
+    .codes-list { display: flex; flex-wrap: wrap; gap: 30px; justify-content: flex-start;}
+    .codes-list pre { font-size: 13.7px; background:#191e2b; border-radius: 7px; padding:14px 12px 12px 12px; min-width: 190px; max-width: 100%; border: 1.2px solid #2d3b54; color: #b0e0fa;}
+    .codes-list .lang { font-size: 15.5px; margin-bottom: 4px; color: #93e7fc;}
+    .codes-row { display: flex; gap: 36px; margin-bottom: 16px;}
+    .codes-row > div { flex: 1 1 0; min-width: 180px;}
+  </style>
+</head>
+<body>
+<a href="index.html">← Back to main index</a>
+<div id="main">
+  <div id="visualizer">
+    <div id="controls">
+      <label>Array size: <input id="sizeSlider" type="range" min="8" max="32" value="16"></label>
+      <button onclick="resetArray()">Reset</button>
+      <button onclick="start()">▶ Play</button>
+      <button onclick="pause()">⏸ Pause</button>
+      <button onclick="stepToStart()">|⏮ Start</button>
+      <button onclick="prevStep()">⏮ Back</button>
+      <button onclick="nextStep()">⏭ Next</button>
+      <button onclick="stepToEnd()">End ⏭|</button>
+      <label>Speed: <input id="speedSlider" type="range" min="30" max="600" value="140"></label>
+    </div>
+    <div id="inputbox">
+      <label for="arrayInput">Custom array: </label>
+      <input type="text" id="arrayInput" placeholder="e.g. 23,14,88,11,77,32,41,60" />
+      <button onclick="useCustomArray()">Use Custom Array</button>
+    </div>
+    <div id="array"></div>
+    <div id="explanation"></div>
+  </div>
+  <div id="codebox">
+    <strong>TimSort <span style="font-size:13px; color:#999; font-weight:normal">(JS visualized with highlighting)</span></strong>
+    <pre id="codearea"></pre>
+  </div>
+</div>
+<div id="purecodebox">
+  <strong>Pure TimSort in Java / C++ / Python / JavaScript</strong>
+  <div class="codes-list">
+    <div class="codes-row">
+      <div><div class="lang">Java</div>
+<pre>static int RUN = 32;
+public static void timSort(int[] arr) {
+  int n = arr.length;
+  for (int i = 0; i < n; i += RUN)
+    insertionSort(arr, i, Math.min((i+RUN-1), (n-1)));
+  for (int size = RUN; size < n; size = 2*size) {
+    for (int left = 0; left < n; left += 2*size) {
+      int mid = left + size - 1;
+      int right = Math.min(left + 2*size - 1, n-1);
+      if(mid < right)
+        merge(arr, left, mid, right);
+    }
+  }
+}
+static void insertionSort(int[] arr, int l, int r) {
+  for (int i = l+1; i <= r; i++) {
+    int key = arr[i], j = i-1;
+    while (j >= l && arr[j] > key) { arr[j+1] = arr[j]; j--; }
+    arr[j+1] = key;
+  }
+}
+static void merge(int[] arr, int l, int m, int r) {
+  int len1 = m - l + 1, len2 = r - m;
+  int[] left = new int[len1], right = new int[len2];
+  for (int i = 0; i < len1; i++) left[i] = arr[l + i];
+  for (int i = 0; i < len2; i++) right[i] = arr[m + 1 + i];
+  int i = 0, j = 0, k = l;
+  while (i < len1 && j < len2)
+    arr[k++] = left[i] <= right[j] ? left[i++] : right[j++];
+  while (i < len1) arr[k++] = left[i++];
+  while (j < len2) arr[k++] = right[j++];
+}</pre>
+      </div>
+      <div><div class="lang">C++</div>
+<pre>const int RUN = 32;
+void insertionSort(int arr[], int l, int r) {
+  for (int i = l+1; i <= r; i++) {
+    int val = arr[i], j = i-1;
+    while (j >= l && arr[j] > val) { arr[j+1] = arr[j]; j--; }
+    arr[j+1] = val;
+  }
+}
+void merge(int arr[], int l, int m, int r) {
+  int len1 = m-l+1, len2 = r-m;
+  vector<int> left(len1), right(len2);
+  for(int i=0;i<len1;i++) left[i]=arr[l+i];
+  for(int i=0;i<len2;i++) right[i]=arr[m+1+i];
+  int i=0,j=0,k=l;
+  while(i<len1&&j<len2) arr[k++] = left[i]<=right[j] ? left[i++] : right[j++];
+  while(i<len1) arr[k++] = left[i++];
+  while(j<len2) arr[k++] = right[j++];
+}
+void timSort(int arr[], int n) {
+  for(int i=0;i<n;i+=RUN)
+    insertionSort(arr,i,min((i+RUN-1),(n-1)));
+  for(int size=RUN;size<n;size=2*size)
+    for(int l=0;l<n;l+=2*size) {
+      int m=l+size-1, r=min(l+2*size-1,n-1);
+      if(m<r) merge(arr,l,m,r);
+    }
+}</pre>
+      </div>
+    </div>
+    <div class="codes-row">
+      <div><div class="lang">Python</div>
+<pre>RUN = 32
+def insertion_sort(arr, l, r):
+    for i in range(l+1, r+1):
+        val, j = arr[i], i-1
+        while j>=l and arr[j]>val:
+            arr[j+1]=arr[j]
+            j-=1
+        arr[j+1]=val
+def merge(arr, l, m, r):
+    left, right = arr[l:m+1], arr[m+1:r+1]
+    i=j=0; k=l
+    while i<len(left) and j<len(right):
+        if left[i]<=right[j]: arr[k]=left[i]; i+=1
+        else: arr[k]=right[j]; j+=1
+        k+=1
+    while i<len(left): arr[k]=left[i]; i+=1; k+=1
+    while j<len(right): arr[k]=right[j]; j+=1; k+=1
+def timsort(arr):
+    n = len(arr)
+    for i in range(0,n,RUN):
+        insertion_sort(arr,i,min(i+RUN-1,n-1))
+    size = RUN
+    while size < n:
+        for l in range(0,n,2*size):
+            m = l+size-1
+            r = min(l+2*size-1,n-1)
+            if m < r:
+                merge(arr,l,m,r)
+        size *= 2
+</pre>
+      </div>
+      <div><div class="lang">JavaScript</div>
+<pre>const RUN = 32;
+function insertionSort(arr, l, r) {
+  for(let i=l+1;i<=r;i++) {
+    let val=arr[i],j=i-1;
+    while(j>=l && arr[j]>val) {arr[j+1]=arr[j];j--;}
+    arr[j+1]=val;
+  }
+}
+function merge(arr, l, m, r) {
+  let left=arr.slice(l,m+1), right=arr.slice(m+1,r+1), i=0,j=0,k=l;
+  while(i<left.length&&j<right.length)
+    arr[k++]=left[i]<=right[j]?left[i++]:right[j++];
+  while(i<left.length) arr[k++]=left[i++];
+  while(j<right.length) arr[k++]=right[j++];
+}
+function timSort(arr) {
+  let n=arr.length;
+  for(let i=0;i<n;i+=RUN)
+    insertionSort(arr,i,Math.min(i+RUN-1,n-1));
+  for(let size=RUN;size<n;size=2*size)
+    for(let l=0;l<n;l+=2*size) {
+      let m=l+size-1, r=Math.min(l+2*size-1,n-1);
+      if(m<r) merge(arr,l,m,r);
+    }
+}
+</pre>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="info-section" style="background:#1f2937; color:#e3f7fa; border-radius:12px; max-width:900px; margin:28px auto 18px auto; padding:24px 22px; box-shadow:0 4px 18px #1e293b30;">
+  <h2 style="margin-top:0;color:#93e7fc;">TimSort: Complexity & Key Points</h2>
+  <ul style="margin:0 0 12px 24px; font-size:16px;">
+    <li><strong>Best/Average/Worst time complexity:</strong> <code>O(n log n)</code></li>
+    <li><strong>Space complexity:</strong> <code>O(n)</code> (for temporary arrays in merge)</li>
+    <li>Hybrid sort: exploits natural runs & uses merge sort on runs</li>
+    <li>Adaptive: very fast for partially sorted/real-world data</li>
+    <li>The default sort in Python and Java</li>
+    <li>Run size often 32 or 64; detects already sorted "runs"</li>
+  </ul>
+</div>
+<script>
+const RUN = 32;
+const ARRAY_MIN = 8, ARRAY_MAX = 32, NUM_MIN = 0, NUM_MAX = 999;
+const codeLines = [
+  'const RUN = 32;',
+  'function insertionSort(arr, l, r) { /* ... */ }',
+  'function merge(arr, l, m, r) { /* ... */ }',
+  'function timSort(arr) {',
+  '  let n=arr.length;',
+  '  for(let i=0;i<n;i+=RUN)',
+  '    insertionSort(arr,i,Math.min(i+RUN-1,n-1));',
+  '  for(let size=RUN;size<n;size=2*size)',
+  '    for(let l=0;l<n;l+=2*size) {',
+  '      let m=l+size-1, r=Math.min(l+2*size-1,n-1);',
+  '      if(m<r) merge(arr,l,m,r);',
+  '    }',
+  '}'
+];
+let array = [], states = [], stateIdx = 0, animating = false, paused = false, timeoutID = null;
+const arrayContainer = document.getElementById('array');
+const explanationBox = document.getElementById('explanation');
+const speedSlider = document.getElementById('speedSlider');
+const sizeSlider = document.getElementById('sizeSlider');
+const codearea = document.getElementById('codearea');
+
+function randomArray(size = 16) {
+  return Array.from({length: size}, () => Math.floor(Math.random()*(NUM_MAX-NUM_MIN+1))+NUM_MIN);
+}
+function renderArray({smallRun=[], mergeL=[], mergeR=[], merging=[], sorted=[], current=-1,compare=-1, lptr=-1, rptr=-1}={}) {
+  arrayContainer.innerHTML = '';
+  array.forEach((val, idx) => {
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    if (smallRun.includes(idx)) bar.classList.add('smallrun');
+    if (mergeL.includes(idx)) bar.classList.add('mergeL');
+    if (mergeR.includes(idx)) bar.classList.add('mergeR');
+    if (merging.includes(idx)) bar.classList.add('merging');
+    if (sorted.includes(idx)) bar.classList.add('sorted');
+    if (idx === current) bar.classList.add('current');
+    if (idx === compare) bar.classList.add('compare');
+    if (idx === lptr) bar.classList.add('lptr');
+    if (idx === rptr) bar.classList.add('rptr');
+    bar.style.height = (55 + (val/NUM_MAX)*120) + 'px';
+    bar.innerHTML = `<div class="value">${val}</div>`;
+    arrayContainer.appendChild(bar);
+  });
+
+  // Pointer labels
+  let pointersDiv = document.querySelector('.ptr-labelbar');
+  if(!pointersDiv){
+    pointersDiv = document.createElement('div');
+    pointersDiv.className = 'ptr-labelbar';
+    arrayContainer.appendChild(pointersDiv);
+  }
+  pointersDiv.innerHTML = '';
+  let lbls = [];
+  if(current >= 0) lbls.push(`<span style="background:#fbbf24;color:#665100;border-radius:4px;padding:2px 8px;">Current</span>`.replace('Current',`Current (${current})`));
+  if(compare >= 0) lbls.push(`<span style="background:#f43f5e;color:#fff;border-radius:4px;padding:2px 8px;margin-left:7px;">Compare</span>`.replace('Compare',`Compare (${compare})`));
+  if(lptr >= 0) lbls.push(`<span style="background:#922fff;color:#fff;border-radius:4px;padding:2px 8px;margin-left:15px;">L</span>`.replace('L',`L (${lptr})`));
+  if(rptr >= 0) lbls.push(`<span style="background:#06d6a0;color:#001a16;border-radius:4px;padding:2px 8px;margin-left:15px;">R</span>`.replace('R',`R (${rptr})`));
+  pointersDiv.innerHTML = lbls.join('');
+}
+// Step snapshots
+function snapshot(arr, highlight, desc) {
+  states.push({...highlight, arr: arr.slice(), desc});
+}
+async function captureTimSortSteps() {
+  states = [];
+  let arr = array.slice(), n = arr.length, sorted = [];
+  // Insertion sort for runs
+  for (let i = 0; i < n; i += RUN) {
+    let l = i, r = Math.min(i+RUN-1, n-1);
+    for(let j=l+1;j<=r;j++){
+      let key=arr[j], k=j-1;
+      snapshot(arr, {smallRun:range(l,r), current:j, compare:k, sorted:sorted.slice()}, `Insertion sort: insert ${key} at ${j} (compare to ${arr[k]} at ${k})`);
+      while(k>=l && arr[k]>key) {
+        arr[k+1]=arr[k];
+        snapshot(arr, {smallRun:range(l,r), current:j, compare:k-1, sorted:sorted.slice()}, `Shift ${arr[k]} right as ${arr[k]}>${key}`);
+        k--;
+      }
+      arr[k+1]=key;
+      snapshot(arr, {smallRun:range(l,r), current:k+1, sorted:sorted.slice()}, `Place ${key} at index ${k+1}`);
+      await sleep(0);
+    }
+  }
+  // Merge
+  let size = RUN;
+  while(size < n){
+    for(let l=0;l<n;l+=2*size){
+      let m = l+size-1, r = Math.min(l+2*size-1,n-1);
+      if(m<r){
+        let left = arr.slice(l,m+1), right = arr.slice(m+1,r+1);
+        let i=0,j=0,k=l;
+        while(i<left.length && j<right.length){
+          let msg = left[i]<=right[j]
+            ? `Merge: left[${i}] = ${left[i]} ≤ right[${j}] = ${right[j]}, set arr[${k}] = ${left[i]}`
+            : `Merge: left[${i}] = ${left[i]} > right[${j}] = ${right[j]}, set arr[${k}] = ${right[j]}`;
+          arr[k] = left[i]<=right[j]?left[i++]:right[j++];
+          snapshot(arr, {mergeL:range(l,m), mergeR:range(m+1,r), lptr:l+i-1,rptr:m+1+j-1, merging:[k], sorted:sorted.slice()}, msg);
+          await sleep(0);
+          k++;
+        }
+        while(i<left.length){
+          arr[k]=left[i];
+          snapshot(arr,{mergeL:range(l,m),lptr:l+i, merging:[k],sorted:sorted.slice()},`Merge: fill arr[${k}] with left[${i}] = ${left[i]}`);
+          await sleep(0);i++;k++;
+        }
+        while(j<right.length){
+          arr[k]=right[j];
+          snapshot(arr,{mergeR:range(m+1,r),rptr:m+1+j, merging:[k],sorted:sorted.slice()},`Merge: fill arr[${k}] with right[${j}] = ${right[j]}`);
+          await sleep(0);j++;k++;
+        }
+      }
+    }
+    size*=2;
+  }
+  snapshot(arr,{sorted:range(0,n-1)}, "TimSort complete! Array sorted.");
+}
+function range(a,b){const out=[];for(let i=a;i<=b;i++)out.push(i);return out;}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function resetArray(){
+  if(animating)return;
+  array=randomArray(Number(sizeSlider.value));
+  renderArray();
+  displayCode(-1);
+  states=[]; stateIdx=0; explanationBox.textContent='';
+}
+function useCustomArray(){
+  const val = document.getElementById('arrayInput').value.trim();
+  const customArr = val.split(',').map(s => +s.trim()).filter(x => !isNaN(x) && x >= NUM_MIN && x <= NUM_MAX);
+  if(customArr.length<ARRAY_MIN||customArr.length>ARRAY_MAX){
+    alert(`Please enter between ${ARRAY_MIN} and ${ARRAY_MAX} integers in ${NUM_MIN}-${NUM_MAX}.`);
+    return;
+  }
+  array=customArr;
+  renderArray();displayCode(-1);states=[];stateIdx=0;explanationBox.textContent='';
+}
+async function start(){
+  if(animating)return;
+  animating=true;paused=false;states=[];stateIdx=0;
+  await captureTimSortSteps();
+  stateIdx=0;
+  nextStep();
+}
+function pause(){paused=true;animating=false;if(timeoutID)clearTimeout(timeoutID);}
+function nextStep(){
+  if(stateIdx>=states.length){animating=false;displayCode(-1);explanationBox.textContent='';return;}
+  const s=states[stateIdx];
+  array=s.arr.slice();
+  renderArray({
+    smallRun: s.smallRun||[],
+    mergeL: s.mergeL||[],
+    mergeR: s.mergeR||[],
+    merging: s.merging||[],
+    sorted: s.sorted||[],
+    current: s.current ?? -1,
+    compare: s.compare??-1,
+    lptr: s.lptr??-1,
+    rptr: s.rptr??-1
+  });
+  explanationBox.textContent = s.desc || "";
+  displayCode(-1);
+  stateIdx++;
+  if(animating && !paused)timeoutID=setTimeout(nextStep,640-Number(speedSlider.value));
+}
+function prevStep(){if(stateIdx>1)stateIdx-=2;if(states.length)nextStep();}
+function stepToStart(){stateIdx=0;nextStep();}
+function stepToEnd(){stateIdx=states.length-1;nextStep();}
+function displayCode(hl){
+  codearea.innerHTML='';
+  codeLines.forEach((l,i)=>{
+    const el = document.createElement('span');
+    el.className='codeline'+(i===hl?' highlight':'');
+    el.textContent=l;
+    codearea.appendChild(el);
+    codearea.appendChild(document.createTextNode('\n'));
+  });
+}
+sizeSlider.addEventListener('input', resetArray);
+resetArray();
+displayCode(-1);
+</script>
+</body>
+</html>
